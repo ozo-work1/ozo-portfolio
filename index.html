@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OZO Portfolio | Interactive Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+</head>
+<body>
+    <div class="background-canvas" id="bg-canvas"></div>
+    <main class="dashboard">
+        <header class="header">
+            <h1 class="logo">OZO<span>.WORK1</span></h1>
+            <p class="tagline">Photography & Data Analysis Hub</p>
+        </header>
+        <section class="portal-grid">
+            <div class="card photography" id="btn-photography">
+                <div class="card-content">
+                    <div class="icon">📸</div>
+                    <h2>360° Photography</h2>
+                    <p>Explore immersive captures and upload your vision.</p>
+                    <button class="action-btn">Enter Gallery</button>
+                </div>
+                <div class="glow"></div>
+            </div>
+            <div class="card data-analysis" id="btn-data">
+                <div class="card-content">
+                    <div class="icon">📊</div>
+                    <h2>Data Analysis</h2>
+                    <p>Showcasing patterns and insights through data.</p>
+                    <button class="action-btn">View Projects</button>
+                </div>
+                <div class="glow"></div>
+            </div>
+        </section>
+        <div id="photography-overlay" class="overlay hidden">
+            <div class="overlay-content">
+                <button class="close-btn">&times;</button>
+                <h3>360° Captures</h3>
+                <div id="panorama-container"></div>
+                <div class="upload-section">
+                    <h4>Upload New Capture</h4>
+                    <input type="file" id="photo-upload" accept="image/*">
+                    <button id="submit-photo" class="submit-btn">Upload to Firebase</button>
+                </div>
+                <div id="photo-list" class="gallery-grid"></div>
+            </div>
+        </div>
+        <div id="data-overlay" class="overlay hidden">
+            <div class="overlay-content">
+                <button class="close-btn">&times;</button>
+                <h3>Data Analysis Projects</h3>
+                <div class="input-form">
+                    <h4>Add New Project</h4>
+                    <input type="text" id="project-title" placeholder="Project Title">
+                    <textarea id="project-desc" placeholder="Project Description"></textarea>
+                    <input type="url" id="project-link" placeholder="Project Link (GitHub/Colab)">
+                    <button id="submit-project" class="submit-btn">Add Project</button>
+                </div>
+                <div id="project-list" class="projects-grid"></div>
+            </div>
+        </div>
+    </main>
+    <script type="module" src="app.js"></script>
+</body>
+</html>
