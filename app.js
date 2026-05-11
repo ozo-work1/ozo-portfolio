@@ -1,89 +1,69 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1NQIGjGNwUMKmTKTQyt8QwOVQStYckb02YaUIphgsYCM/pub?output=csv';
 
-const firebaseConfig = {
-    apiKey: "AIzaSyCgXFj1PI-8n4sBzlKHs3r7qEZpgotZWs8",
-    authDomain: "ozo123-96693.firebaseapp.com",
-    projectId: "ozo123-96693",
-    storageBucket: "ozo123-96693.firebasestorage.app",
-    messagingSenderId: "366798479849",
-    appId: "1:366798479849:web:15eaa2b32987c00b9b6b78",
-    measurementId: "G-Z18NQMG8L8"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const storage = getStorage(app);
-
-const btnPhotography = document.getElementById('btn-photography');
-const btnData = document.getElementById('btn-data');
-const photoOverlay = document.getElementById('photography-overlay');
-const dataOverlay = document.getElementById('data-overlay');
-const closeBtns = document.querySelectorAll('.close-btn');
-
-btnPhotography.addEventListener('click', () => { photoOverlay.classList.remove('hidden'); initPanorama(); });
-btnData.addEventListener('click', () => { dataOverlay.classList.remove('hidden'); });
-closeBtns.forEach(btn => { btn.addEventListener('click', () => { photoOverlay.classList.add('hidden'); dataOverlay.classList.add('hidden'); }); });
-
-function initPanorama(imageSrc = "https://pannellum.org/images/alma.jpg") {
-    pannellum.viewer('panorama-container', { "type": "equirectangular", "panorama": imageSrc, "autoLoad": true });
+async function loadGallery() {
+    try {
+        const response = await fetch(SHEET_URL);
+        const csvText = await response.text();
+        
+        Papa.parse(csvText, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+                const gallery = document.getElementById('gallery');
+                if (!gallery) return;
+                gallery.innerHTML = '';
+                
+                results.data.forEach(item => {
+                    if (!item.Title || !item.ImageLink) return;
+                    
+                    const card = document.createElement('div');
+                    card.className = 'card photography';
+                    card.innerHTML = \`
+                        <div class="card-content">
+                            <div class="icon">📸</div>
+                            <h2>\${item.Title}</h2>
+                            <p>\${item.Description || ''}</p>
+                            <button class="action-btn">View Capture</button>
+                        </div>
+                        <div class="glow"></div>
+                    \`;
+                    
+                    card.onclick = () => openViewer(item.ImageLink, item.Type);
+                    gallery.appendChild(card);
+                });
+            }
+        });
+    } catch (err) {
+        console.error("Error loading gallery data:", err);
+    }
 }
 
-const photoUpload = document.getElementById('photo-upload');
-const submitPhoto = document.getElementById('submit-photo');
-const photoList = document.getElementById('photo-list');
+function openViewer(url, type) {
+    const container = document.getElementById('viewer-container');
+    const pano = document.getElementById('panorama');
+    if (!container || !pano) return;
 
-submitPhoto.addEventListener('click', async () => {
-    const file = photoUpload.files[0];
-    if (!file) return alert("Please select a file first");
-    try {
-        const storageRef = ref(storage, '360_captures/' + file.name);
-        const snapshot = await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(snapshot.ref);
-        await addDoc(collection(db, "captures"), { url: url, name: file.name, timestamp: new Date() });
-        alert("360 Capture Uploaded!");
-        initPanorama(url);
-    } catch (e) { console.error("Error uploading photo:", e); alert("Error occurred. Check console."); }
-});
+    container.style.display = 'block';
+    container.scrollIntoView({ behavior: 'smooth' });
+    
+    pano.innerHTML = '';
 
-onSnapshot(query(collection(db, "captures"), orderBy("timestamp", "desc")), (snapshot) => {
-    photoList.innerHTML = '';
-    snapshot.forEach((doc) => {
-        const data = doc.data();
-        const card = document.createElement('div');
-        card.className = 'item-card';
-        card.innerHTML = `<h4>${data.name}</h4><p>Uploaded: ${new Date(data.timestamp.seconds * 1000).toLocaleDateString()}</p><button onclick="window.view360('${data.url}')" class="submit-btn" style="margin-top: 10px; padding: 5px 10px; font-size: 0.8rem;">View in 360</button>`;
-        photoList.appendChild(card);
-    });
-});
+    if (type && type.toLowerCase().includes('360')) {
+        pannellum.viewer('panorama', {
+            "type": "equirectangular",
+            "panorama": url,
+            "autoLoad": true
+        });
+    } else {
+        pano.innerHTML = \`<img src="\${url}" style="width: 100%; height: 100%; object-fit: contain;">\`;
+    }
+}
 
-window.view360 = (url) => { initPanorama(url); };
+function closeViewer() {
+    const container = document.getElementById('viewer-container');
+    if (container) container.style.display = 'none';
+    const pano = document.getElementById('panorama');
+    if (pano) pano.innerHTML = '';
+}
 
-const submitProject = document.getElementById('submit-project');
-const projectList = document.getElementById('project-list');
-
-submitProject.addEventListener('click', async () => {
-    const title = document.getElementById('project-title').value;
-    const desc = document.getElementById('project-desc').value;
-    const link = document.getElementById('project-link').value;
-    if (!title) return alert("Title is required");
-    try {
-        await addDoc(collection(db, "projects"), { title, desc, link, timestamp: new Date() });
-        alert("Project added!");
-        document.getElementById('project-title').value = '';
-        document.getElementById('project-desc').value = '';
-        document.getElementById('project-link').value = '';
-    } catch (e) { console.error("Error adding project:", e); alert("Error occurred."); }
-});
-
-onSnapshot(query(collection(db, "projects"), orderBy("timestamp", "desc")), (snapshot) => {
-    projectList.innerHTML = '';
-    snapshot.forEach((doc) => {
-        const data = doc.data();
-        const card = document.createElement('div');
-        card.className = 'item-card';
-        card.innerHTML = `<h4>${data.title}</h4><p>${data.desc}</p>${data.link ? `<a href="${data.link}" target="_blank" style="color: var(--primary); font-size: 0.8rem; text-decoration: none;">View Project →</a>` : ''}`;
-        projectList.appendChild(card);
-    });
-});
+document.addEventListener('DOMContentLoaded', loadGallery);
